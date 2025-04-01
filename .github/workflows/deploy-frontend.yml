@@ -19,13 +19,13 @@ jobs:
         node-version: '20'  # Specify your Node.js version
 
     - name: Install dependencies
+      working-directory: ./frontend  # Add this line to point to the frontend directory
       run: |
-        cd frontend
         npm install
 
     - name: Build React App
+      working-directory: ./frontend
       run: |
-        cd frontend
         npm run build
 
     - name: Deploy to Azure Web App
