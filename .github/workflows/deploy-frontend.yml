@@ -20,12 +20,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd frontend
+        cd frontend/articleRecommender
         npm install
 
     - name: Build React App
       run: |
-        cd frontend
+        cd frontend/articleRecommender
         npm run build
 
     - name: Deploy to Azure Web App
