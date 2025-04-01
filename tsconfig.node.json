@@ -5,6 +5,8 @@
     "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "outDir": "./frontend/dist",
+    "rootDir": "./frontend",
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -20,5 +22,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["frontend/vite.config.ts"],
+  "exclude": ["node_modules", "frontend/dist"]
 }
