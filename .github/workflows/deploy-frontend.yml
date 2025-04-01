@@ -33,4 +33,4 @@ jobs:
       with:
         app-name: articleRecommender # Your Azure Web App name
         slot-name: production  # Slot name (use "production" for the main slot)
-        package: ./frontend/build  # Only deploy the 'frontend/build' directory
+        package: ./frontend/dist  # Only deploy the 'frontend/build' directory
