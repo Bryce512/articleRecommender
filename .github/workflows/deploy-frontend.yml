@@ -20,12 +20,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd frontend/articleRecommender
+        cd frontend
         npm install
 
     - name: Build React App
       run: |
-        cd frontend/articleRecommender
+        cd frontend
         npm run build
 
     - name: Deploy to Azure Web App
@@ -33,4 +33,4 @@ jobs:
       with:
         app-name: articleRecommender # Your Azure Web App name
         slot-name: production  # Slot name (use "production" for the main slot)
-        package: ./frontend/articleRecommender/dist  # Only deploy the 'frontend/build' directory
+        package: ./frontend/dist  # Only deploy the 'frontend/build' directory
