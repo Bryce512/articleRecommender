@@ -1,0 +1,36 @@
+name: Deploy React App to Azure
+
+on:
+  push:
+    branches:
+      - main  # Trigger the deployment on push to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'  # Specify your Node.js version
+
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm install
+
+    - name: Build React App
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Deploy to Azure Web App
+      uses: Azure/webapps-deploy@v2
+      with:
+        app-name: articleRecommender # Your Azure Web App name
+        slot-name: production  # Slot name (use "production" for the main slot)
+        package: ./frontend/build  # Only deploy the 'frontend/build' directory
