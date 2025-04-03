@@ -1,35 +1,207 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect, FormEvent } from "react";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo " />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+interface Recommendation {
+  itemId: string;
+  score: number;
+  title?: string;
+  description?: string;
 }
 
-export default App
+function App() {
+  const [userId, setUserId] = useState<string>("");
+  const [itemId, setItemId] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Available userIDs and itemIDs for selection
+  const [availableUserIds, setAvailableUserIds] = useState<string[]>([]);
+  const [availableItemIds, setAvailableItemIds] = useState<string[]>([]);
+
+  // Results from different models
+  const [contentBasedResults, setContentBasedResults] = useState<
+    Recommendation[]
+  >([]);
+  const [collaborativeResults, setCollaborativeResults] = useState<
+    Recommendation[]
+  >([]);
+  const [hybridResults, setHybridResults] = useState<Recommendation[]>([]);
+
+  // Fetch available userIDs and itemIDs when component mounts
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        // Fetch available userIDs and itemIDs
+        const userResponse = await fetch("/api/users");
+        const itemResponse = await fetch("/api/items");
+
+        if (!userResponse.ok || !itemResponse.ok) {
+          throw new Error("Failed to fetch options");
+        }
+
+        const userData = await userResponse.json();
+        const itemData = await itemResponse.json();
+
+        setAvailableUserIds(userData);
+        setAvailableItemIds(itemData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load options");
+      }
+    };
+
+    fetchOptions();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!userId && !itemId) {
+      setError("Please select either a User ID or an Item ID");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create query params based on which fields are selected
+      const params = new URLSearchParams();
+      if (userId) params.append("userId", userId);
+      if (itemId) params.append("itemId", itemId);
+
+      // Fetch recommendations from all three models
+      const contentResponse = await fetch(
+        `/api/recommendations/content-based?${params}`
+      );
+      const collaborativeResponse = await fetch(
+        `/api/recommendations/collaborative?${params}`
+      );
+      const hybridResponse = await fetch(
+        `/api/recommendations/hybrid?${params}`
+      );
+
+      if (
+        !contentResponse.ok ||
+        !collaborativeResponse.ok ||
+        !hybridResponse.ok
+      ) {
+        throw new Error("Failed to fetch recommendations");
+      }
+
+      const contentData = await contentResponse.json();
+      const collaborativeData = await collaborativeResponse.json();
+      const hybridData = await hybridResponse.json();
+
+      setContentBasedResults(contentData);
+      setCollaborativeResults(collaborativeData);
+      setHybridResults(hybridData);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ResultsTable = ({
+    title,
+    results,
+  }: {
+    title: string;
+    results: Recommendation[];
+  }) => (
+    <div className="model-results">
+      <h2>{title}</h2>
+      {results.length > 0 ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Item ID</th>
+              <th>Score</th>
+              <th>Title</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((item) => (
+              <tr key={item.itemId}>
+                <td>{item.itemId}</td>
+                <td>{item.score.toFixed(4)}</td>
+                <td>{item.title || "N/A"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>No recommendations found</p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="recommendation-app">
+      <h1>Article Recommendation System</h1>
+
+      <form onSubmit={handleSubmit} className="search-form">
+        <div className="input-group">
+          <label htmlFor="userId">User ID:</label>
+          <select
+            id="userId"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+          >
+            <option value="">Select a User ID</option>
+            {availableUserIds.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="itemId">Item ID:</label>
+          <select
+            id="itemId"
+            value={itemId}
+            onChange={(e) => setItemId(e.target.value)}
+          >
+            <option value="">Select an Item ID</option>
+            {availableItemIds.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button type="submit" disabled={loading}>
+          {loading ? "Loading..." : "Get Recommendations"}
+        </button>
+      </form>
+
+      {error && <div className="error-message">{error}</div>}
+
+      {loading ? (
+        <div className="loading">Loading recommendations...</div>
+      ) : (
+        <div className="results-container">
+          <ResultsTable
+            title="Content-Based Recommendations"
+            results={contentBasedResults}
+          />
+          <ResultsTable
+            title="Collaborative Filtering Recommendations"
+            results={collaborativeResults}
+          />
+          <ResultsTable
+            title="Hybrid Recommendations"
+            results={hybridResults}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
