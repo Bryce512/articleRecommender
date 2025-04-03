@@ -25,7 +25,7 @@ function App() {
   const [collaborativeResults, setCollaborativeResults] = useState<
     Recommendation[]
   >([]);
-  const [hybridResults, setHybridResults] = useState<Recommendation[]>([]);
+  const [WaDResults, setWaDResults] = useState<Recommendation[]>([]);
 
   // Fetch available userIDs and itemIDs when component mounts
   useEffect(() => {
@@ -76,25 +76,25 @@ function App() {
       const collaborativeResponse = await fetch(
         `/api/recommendations/collaborative?${params}`
       );
-      const hybridResponse = await fetch(
+      const WaDResponse = await fetch(
         `/api/recommendations/hybrid?${params}`
       );
 
       if (
         !contentResponse.ok ||
         !collaborativeResponse.ok ||
-        !hybridResponse.ok
+        !WaDResponse.ok
       ) {
         throw new Error("Failed to fetch recommendations");
       }
 
       const contentData = await contentResponse.json();
       const collaborativeData = await collaborativeResponse.json();
-      const hybridData = await hybridResponse.json();
+      const WaDData = await WaDResponse.json();
 
       setContentBasedResults(contentData);
       setCollaborativeResults(collaborativeData);
-      setHybridResults(hybridData);
+      setWaDResults(WaDData);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
@@ -144,7 +144,7 @@ function App() {
 
       <form onSubmit={handleSubmit} className="search-form">
         <div className="input-group">
-          <label htmlFor="userId">User ID:</label>
+          <label htmlFor="userId">User ID: </label>
           <select
             id="userId"
             value={userId}
@@ -160,7 +160,7 @@ function App() {
         </div>
 
         <div className="input-group">
-          <label htmlFor="itemId">Item ID:</label>
+          <label htmlFor="itemId">Item ID: </label>
           <select
             id="itemId"
             value={itemId}
@@ -195,8 +195,8 @@ function App() {
             results={collaborativeResults}
           />
           <ResultsTable
-            title="Hybrid Recommendations"
-            results={hybridResults}
+            title="Wide and De Recommendations"
+            results={WaDResults}
           />
         </div>
       )}

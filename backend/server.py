@@ -8,7 +8,7 @@ app = FastAPI()
 model_1 = joblib.load("model1.sav")
 model_2 = joblib.load("model2.sav")
 
-class InputData(BaseModel):
+class InputData(BaseModel): 
     features: list[float]
 
 @app.post("/predict/model1")
