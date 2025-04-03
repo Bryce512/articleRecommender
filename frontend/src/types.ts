@@ -1,8 +1,8 @@
 export interface Recommendation {
   itemId: string;
-  score: number;
+  userId: string;
   title?: string;
-  description?: string;
+  contentId?: string;
 }
 
 export interface User {
@@ -32,10 +32,3 @@ export interface Item {
   lang: string;
 }
 
-
-export interface Rating {
-  userId: string;
-  itemId: string;
-  rating: number;
-  // Add other rating properties as needed
-}

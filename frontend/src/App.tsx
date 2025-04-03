@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import Papa from "papaparse"; 
 import "./App.css";
 import ResultsTable from "./ResultsTable";
-import { User, Item, Rating, Recommendation } from "./types";
+import { User, Item, Recommendation } from "./types";
 
 
 function App() {
@@ -13,17 +13,14 @@ function App() {
 
   // Store data from CSV files
   const [itemData, setItemData] = useState<Item[]>([]);
-  const [ratingData, setRatingData] = useState<Rating[]>([]);
 
   // Available userIDs and itemIDs for selection
   const [availableUserIds, setAvailableUserIds] = useState<string[]>([]);
   const [availableItemIds, setAvailableItemIds] = useState<string[][]>([]);
 
   // Results from different models
-  const [contentBasedResults, setContentBasedResults] = useState<
-    Recommendation[]>([]);
-  const [collaborativeResults, setCollaborativeResults] = useState<
-    Recommendation[]>([]);
+  const [contentBasedResults, setContentBasedResults] = useState<Recommendation[]>([]);
+  const [collaborativeResults, setCollaborativeResults] = useState<Recommendation[]>([]);
   const [WaDResults, setWaDResults] = useState<Recommendation[]>([]);
 
   // Load CSV files from public folder
@@ -34,20 +31,13 @@ function App() {
         // Load users, items, and ratings CSV files
         const usersCsvData = await loadCsv("/users_interactions.csv");
         const itemsCsvData = await loadCsv("/shared_articles.csv");
-        const ratingsCsvData = await loadCsv("/ratings.csv");
 
         // Parse CSV data
         const users = Papa.parse<User>(usersCsvData, { header: true }).data;
         const items = Papa.parse<Item>(itemsCsvData, { header: true }).data;
-        const ratings = Papa.parse<Rating>(ratingsCsvData, {
-          header: true,
-        }).data;
 
         // Store data
         setItemData(items.filter((item) => item.contentId)); // Filter out rows with missing itemId
-        setRatingData(
-          ratings.filter((rating) => rating.userId && rating.itemId)
-        ); // Filter out rows with missing IDs
 
         // Extract unique IDs for select dropdowns
         setAvailableUserIds(
@@ -121,51 +111,40 @@ function App() {
   const generateContentBasedRecommendations = (
     userIdParam?: string,
     itemIdParam?: string
-  ): Recommendation[] => {
-    // This is a simplified implementation
-    // In a real system, you'd compare item features or user preferences
+  ): Recommendation | null => {
 
     if (itemIdParam) {
       // Item-based: find similar items
-      const selectedItem = itemData.find((item) => item.contentId === itemIdParam);
-      if (!selectedItem) return [];
+      const selectedItem = contentBasedResults.find((item) => item.itemId === itemIdParam);
+      if (!selectedItem) return null;
 
       // Dummy implementation - in reality, you'd compare item features
-      return itemData
-        .filter((item) => item.contentId !== itemIdParam)
-        .slice(0, 5)
-        .map((item, index) => ({
-          itemId: item.contentId,
-          score: 0.9 - index * 0.1,
-          title: item.title,
-        }));
+      return null
+      //   .filter((item) => item.contentId !== itemIdParam)
+      //   .slice(0, 5)
+      //   .map((item, index) => ({
+      //     itemId: item.contentId,
+      //     score: 0.9 - index * 0.1,
+      //     title: item.title,
+      //   }));
     } else if (userIdParam) {
-      // User-based: find items the user might like
-      const userRatings = ratingData.filter(
-        (rating) => rating.userId === userIdParam
-      );
+        const selectedItem = contentBasedResults.find(
+          (item) => item.userId === itemIdParam
+        );
+        if (!selectedItem) return null;
 
-      // Get items the user hasn't rated
-      const unratedItems = itemData.filter(
-        (item) => !userRatings.some((rating) => rating.itemId === item.contentId)
-      );
-
-      // Return top 5 unrated items (dummy implementation)
-      return unratedItems.slice(0, 5).map((item, index) => ({
-        itemId: item.contentId,
-        score: 0.85 - index * 0.08,
-        title: item.title,
-      }));
+        return (selectedItem)
+    } else {
+      return null;
     }
 
-    return [];
   };
 
   // Simple collaborative filtering implementation
   const generateCollaborativeRecommendations = (
     userIdParam?: string,
     itemIdParam?: string
-  ): Recommendation[] => {
+  ): Recommendation => {
     if (userIdParam) {
       // User-based collaborative filtering
       // Find users with similar ratings and recommend items they liked
