@@ -133,7 +133,7 @@ function App() {
           </tbody>
         </table>
       ) : (
-        <p>No recommendations found</p>
+        <p>No recommendations found </p>
       )}
     </div>
   );
