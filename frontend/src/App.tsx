@@ -12,7 +12,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   // Store data from CSV files
-  const [userData, setUserData] = useState<User[]>([]);
   const [itemData, setItemData] = useState<Item[]>([]);
   const [ratingData, setRatingData] = useState<Rating[]>([]);
 
@@ -45,7 +44,6 @@ function App() {
         }).data;
 
         // Store data
-        setUserData(users.filter((user) => user.personId)); // Filter out rows with missing userId
         setItemData(items.filter((item) => item.contentId)); // Filter out rows with missing itemId
         setRatingData(
           ratings.filter((rating) => rating.userId && rating.itemId)
