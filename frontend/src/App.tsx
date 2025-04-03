@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import Papa from "papaparse"; 
 import "./App.css";
 import ResultsTable from "./ResultsTable";
-import { User, Item, Recommendation } from "./types";
+import { User, Recommendation } from "./types";
 
 
 function App() {
@@ -11,8 +11,6 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Store data from CSV files
-  const [itemData, setItemData] = useState<Item[]>([]);
 
   // Available userIDs and itemIDs for selection
   const [availableUserIds, setAvailableUserIds] = useState<string[]>([]);
@@ -21,7 +19,12 @@ function App() {
   // Results from different models
   const [contentBasedResults, setContentBasedResults] = useState<Recommendation[]>([]);
   const [collaborativeResults, setCollaborativeResults] = useState<Recommendation[]>([]);
-  const [WaDResults, setWaDResults] = useState<Recommendation[]>([]);
+  // const [WaDResults, setWaDResults] = useState<Recommendation[]>([]);
+
+  // individual recommendation
+  const [contentBasedResult, setContentBasedResult] = useState<Recommendation | null>(null);
+  const [collaborativeResult, setCollaborativeResult] = useState<Recommendation | null>(null);
+  // const [hybridResult, setHybridResult] = useState<Recommendation | null>(null);
 
   // Load CSV files from public folder
   useEffect(() => {
@@ -30,22 +33,38 @@ function App() {
       try {
         // Load users, items, and ratings CSV files
         const usersCsvData = await loadCsv("/users_interactions.csv");
-        const itemsCsvData = await loadCsv("/shared_articles.csv");
+        const collabResults = await loadCsv("/collaborative_filtering.csv");
+        const contentResults = await loadCsv("/ratings.csv");
 
         // Parse CSV data
         const users = Papa.parse<User>(usersCsvData, { header: true }).data;
-        const items = Papa.parse<Item>(itemsCsvData, { header: true }).data;
+        const collabRecs = Papa.parse<Recommendation>(collabResults, {
+          header: true,
+        }).data;
+        const contentRecs = Papa.parse<Recommendation>(contentResults, {
+          header: true,
+        }).data;
 
         // Store data
-        setItemData(items.filter((item) => item.contentId)); // Filter out rows with missing itemId
-
+        collabRecs.filter((item) => item.contentId); // Filter out rows with missing itemId
+        users.filter((user) => user.personId); // Filter out rows with missing personId
+        setCollaborativeResults(collabRecs.filter((item) => item.contentId)); // Filter out rows with missing itemId
+        setContentBasedResults(contentRecs.filter((item) => item.contentId)); // Filter out rows with missing itemId
         // Extract unique IDs for select dropdowns
         setAvailableUserIds(
-          [...new Set(users.map((user) => user.personId))].filter(Boolean)
+          [
+            ...new Set(users.filter(Boolean).map((user) => user.personId)),
+          ].filter(Boolean)
         );
-        setAvailableItemIds(
-          [...new Set(items.map((item) => [item.contentId, item.title]))].filter(Boolean)
-        );
+
+        // Use a Map to ensure unique contentId values
+        const uniqueItemsMap = new Map();
+        collabRecs.forEach((item) => {
+          if (item.contentId && item.title) {
+            uniqueItemsMap.set(item.contentId, [item.contentId, item.title]);
+          }
+        });
+        setAvailableItemIds(Array.from(uniqueItemsMap.values()));
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load CSV data"
@@ -82,22 +101,23 @@ function App() {
     try {
       // Generate recommendations based on the CSV data
       // Content-based recommendations
-      const contentBasedRecs = generateContentBasedRecommendations(
+      const contentBasedRec = generateContentBasedRecommendations(
         userId,
         itemId
       );
-      setContentBasedResults(contentBasedRecs);
+      setContentBasedResult(contentBasedRec);
 
       // Collaborative filtering recommendations
-      const collaborativeRecs = generateCollaborativeRecommendations(
+      const collaborativeRec = generateCollaborativeRecommendations(
         userId,
         itemId
       );
-      setCollaborativeResults(collaborativeRecs);
+      setCollaborativeResult(collaborativeRec);
+      console.log("collaborativeRec", collaborativeRec);
 
       // Wide and Deep recommendations (hybrid)
-      const hybridRecs = generateHybridRecommendations(userId, itemId);
-      setWaDResults(hybridRecs);
+      // const hybridRecs = generateHybridRecommendations(userId, itemId);
+      // setWaDResults(hybridRecs);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
@@ -115,21 +135,14 @@ function App() {
 
     if (itemIdParam) {
       // Item-based: find similar items
-      const selectedItem = contentBasedResults.find((item) => item.itemId === itemIdParam);
+      const selectedItem = contentBasedResults.find((item) => item.contentId === itemIdParam);
       if (!selectedItem) return null;
 
       // Dummy implementation - in reality, you'd compare item features
       return null
-      //   .filter((item) => item.contentId !== itemIdParam)
-      //   .slice(0, 5)
-      //   .map((item, index) => ({
-      //     itemId: item.contentId,
-      //     score: 0.9 - index * 0.1,
-      //     title: item.title,
-      //   }));
     } else if (userIdParam) {
         const selectedItem = contentBasedResults.find(
-          (item) => item.userId === itemIdParam
+          (item) => item.contentId === itemIdParam
         );
         if (!selectedItem) return null;
 
@@ -144,59 +157,56 @@ function App() {
   const generateCollaborativeRecommendations = (
     userIdParam?: string,
     itemIdParam?: string
-  ): Recommendation => {
+  ): Recommendation | null => {
     if (userIdParam) {
       // User-based collaborative filtering
       // Find users with similar ratings and recommend items they liked
+      const selectedRecommendation = collaborativeResults.find(
+        (item) => item.contentId === userIdParam
+      );
+      if (!selectedRecommendation) return null;
 
-      // Dummy implementation - in reality, you'd calculate user similarities
-      return itemData.slice(5, 10).map((item, index) => ({
-        itemId: item.contentId,
-        score: 0.8 - index * 0.07,
-        title: item.title,
-      }));
+      return selectedRecommendation;
     } else if (itemIdParam) {
-      // Item-based collaborative filtering
-      // Find items that are often rated similarly to this item
-
-      // Dummy implementation
-      return itemData.slice(10, 15).map((item, index) => ({
-        itemId: item.contentId,
-        score: 0.75 - index * 0.06,
-        title: item.title,
-      }));
+      console.log("itemIdParam", itemIdParam);
+      const selectedItem = collaborativeResults.find(
+        (x) => x.contentId === itemIdParam
+      );
+      console.log("selectedItem1", selectedItem);
+      if (!selectedItem) return null;
+      console.log("selectedItem2", selectedItem);
+      return selectedItem; 
     }
-
-    return [];
+    return null;
   };
 
   // Hybrid recommendations implementation
-  const generateHybridRecommendations = (
-    userIdParam?: string,
-    itemIdParam?: string
-  ): Recommendation[] => {
-    // Combine results from both methods
-    const contentBased = generateContentBasedRecommendations(
-      userIdParam,
-      itemIdParam
-    );
-    const collaborative = generateCollaborativeRecommendations(
-      userIdParam,
-      itemIdParam
-    );
+  // const generateHybridRecommendations = (
+  //   userIdParam?: string,
+  //   itemIdParam?: string
+  // ): Recommendation[] => {
+  //   // Combine results from both methods
+  //   const contentBased = generateContentBasedRecommendations(
+  //     userIdParam,
+  //     itemIdParam
+  //   );
+  //   const collaborative = generateCollaborativeRecommendations(
+  //     userIdParam,
+  //     itemIdParam
+  //   );
 
-    // Simple hybridization: alternate between the two methods
-    const hybrid: Recommendation[] = [];
-    const maxLength = Math.max(contentBased.length, collaborative.length);
+  //   // Simple hybridization: alternate between the two methods
+  //   const hybrid: Recommendation[] = [];
+  //   const maxLength = Math.max(contentBased.length, collaborative.length);
 
-    for (let i = 0; i < maxLength; i++) {
-      if (i < contentBased.length) hybrid.push(contentBased[i]);
-      if (i < collaborative.length) hybrid.push(collaborative[i]);
-    }
+  //   for (let i = 0; i < maxLength; i++) {
+  //     if (i < contentBased.length) hybrid.push(contentBased[i]);
+  //     if (i < collaborative.length) hybrid.push(collaborative[i]);
+  //   }
 
-    // Return top 5 hybrid recommendations
-    return hybrid.slice(0, 5);
-  };
+  //   // Return top 5 hybrid recommendations
+  //   return hybrid.slice(0, 5);
+  // };
 
 
   return (
@@ -260,16 +270,16 @@ function App() {
             <div className="results-container">
               <ResultsTable
                 title="Content-Based Recommendations"
-                results={contentBasedResults}
+                result={contentBasedResult}
               />
               <ResultsTable
                 title="Collaborative Filtering Recommendations"
-                results={collaborativeResults}
+                result={collaborativeResult}
               />
-              <ResultsTable
+              {/* <ResultsTable
                 title="Wide and Deep Recommendations"
-                results={WaDResults}
-              />
+                // result={WaDResult}
+              /> */}
             </div>
           )}
         </>

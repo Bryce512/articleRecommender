@@ -1,8 +1,12 @@
 export interface Recommendation {
-  itemId: string;
-  userId: string;
-  title?: string;
   contentId?: string;
+  title: string;
+  "Recommendation 1": string;
+  "Recommendation 2": string;
+ "Recommendation 3": string;
+  "Recommendation 4": string;
+  "Recommendation 5": string;
+
 }
 
 export interface User {
