@@ -34,7 +34,7 @@ function App() {
         // Load users, items, and ratings CSV files
         const usersCsvData = await loadCsv("/users_interactions.csv");
         const collabResults = await loadCsv("/collaborative_filtering.csv");
-        const contentResults = await loadCsv("/ratings.csv");
+        const contentResults = await loadCsv("/content_filtering.csv");
 
         // Parse CSV data
         const users = Papa.parse<User>(usersCsvData, { header: true }).data;
