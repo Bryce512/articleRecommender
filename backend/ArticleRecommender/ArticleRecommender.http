@@ -1,6 +1,0 @@
-@ArticleRecommender_HostAddress = http://localhost:5105
-
-GET {{ArticleRecommender_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

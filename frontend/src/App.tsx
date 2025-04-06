@@ -57,13 +57,43 @@ function App() {
           ].filter(Boolean)
         );
 
-        // Use a Map to ensure unique contentId values
+        // Create a Set of contentIds from contentRecs for quick lookup
+        const contentRecsIds = new Set(
+          contentRecs
+            .filter((item) => item.contentId)
+            .map((item) => item.contentId)
+        );
+
+        // Create a Set of contentIds from collabRecs for quick lookup
+        const collabRecsIds = new Set(
+          collabRecs
+            .filter((item) => item.contentId)
+            .map((item) => item.contentId)
+        );
+
+        // Use a Map to store unique contentIds that exist in both datasets
         const uniqueItemsMap = new Map();
+
+        // Only add items that exist in both datasets
         collabRecs.forEach((item) => {
-          if (item.contentId && item.title) {
+          if (
+            item.contentId &&
+            item.title &&
+            contentRecsIds.has(item.contentId) &&
+            collabRecsIds.has(item.contentId)
+          ) {
             uniqueItemsMap.set(item.contentId, [item.contentId, item.title]);
           }
         });
+
+        // Log the count of items in each dataset and the overlap
+        console.log(`Content recommendations: ${contentRecsIds.size} items`);
+        console.log(
+          `Collaborative recommendations: ${collabRecsIds.size} items`
+        );
+        console.log(`Items in both datasets: ${uniqueItemsMap.size} items`);
+
+        // Convert to array for the dropdown
         setAvailableItemIds(Array.from(uniqueItemsMap.values()));
       } catch (err) {
         setError(
@@ -106,6 +136,7 @@ function App() {
         itemId
       );
       setContentBasedResult(contentBasedRec);
+      console.log("contentBasedRec", contentBasedRec);
 
       // Collaborative filtering recommendations
       const collaborativeRec = generateCollaborativeRecommendations(
@@ -132,21 +163,16 @@ function App() {
     userIdParam?: string,
     itemIdParam?: string
   ): Recommendation | null => {
+    console.log("id: ", itemIdParam, userIdParam);
 
     if (itemIdParam) {
       // Item-based: find similar items
       const selectedItem = contentBasedResults.find((item) => item.contentId === itemIdParam);
       if (!selectedItem) return null;
 
-      // Dummy implementation - in reality, you'd compare item features
-      return null
-    } else if (userIdParam) {
-        const selectedItem = contentBasedResults.find(
-          (item) => item.contentId === itemIdParam
-        );
-        if (!selectedItem) return null;
 
-        return (selectedItem)
+      // Dummy implementation - in reality, you'd compare item features
+      return selectedItem;
     } else {
       return null;
     }
@@ -168,45 +194,15 @@ function App() {
 
       return selectedRecommendation;
     } else if (itemIdParam) {
-      console.log("itemIdParam", itemIdParam);
       const selectedItem = collaborativeResults.find(
         (x) => x.contentId === itemIdParam
       );
-      console.log("selectedItem1", selectedItem);
       if (!selectedItem) return null;
-      console.log("selectedItem2", selectedItem);
       return selectedItem; 
     }
     return null;
   };
 
-  // Hybrid recommendations implementation
-  // const generateHybridRecommendations = (
-  //   userIdParam?: string,
-  //   itemIdParam?: string
-  // ): Recommendation[] => {
-  //   // Combine results from both methods
-  //   const contentBased = generateContentBasedRecommendations(
-  //     userIdParam,
-  //     itemIdParam
-  //   );
-  //   const collaborative = generateCollaborativeRecommendations(
-  //     userIdParam,
-  //     itemIdParam
-  //   );
-
-  //   // Simple hybridization: alternate between the two methods
-  //   const hybrid: Recommendation[] = [];
-  //   const maxLength = Math.max(contentBased.length, collaborative.length);
-
-  //   for (let i = 0; i < maxLength; i++) {
-  //     if (i < contentBased.length) hybrid.push(contentBased[i]);
-  //     if (i < collaborative.length) hybrid.push(collaborative[i]);
-  //   }
-
-  //   // Return top 5 hybrid recommendations
-  //   return hybrid.slice(0, 5);
-  // };
 
 
   return (
@@ -218,7 +214,7 @@ function App() {
       ) : (
         <>
           <form onSubmit={handleSubmit} className="search-form">
-            <div className="input-group">
+            {/* <div className="input-group">
               <label htmlFor="userId">User ID: </label>
               <select
                 id="userId"
@@ -235,7 +231,7 @@ function App() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
             <div className="input-group">
               <label htmlFor="itemId">Item ID: </label>
